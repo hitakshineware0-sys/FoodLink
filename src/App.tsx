@@ -215,14 +215,6 @@ export default function App() {
             >
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
                 <div className="space-y-8 text-center lg:text-left">
-                  <motion.div
-                    initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full font-bold text-sm uppercase tracking-wider"
-                  >
-                    <Star size={16} fill="currentColor" />
-                    Trusted by 10,000+ Donors
-                  </motion.div>
                   <h1 className="text-5xl md:text-7xl font-black text-gray-900 leading-tight">
                     Smart Food <span className="text-primary">Sharing</span> for a Better World.
                   </h1>

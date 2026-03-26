@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { db, collection, addDoc, Timestamp, handleFirestoreError, OperationType } from '../firebase';
 import { UserProfile } from '../types';
 import { motion } from 'motion/react';
-import { Utensils, Clock, MapPin, ShieldCheck, Send } from 'lucide-react';
+import { Utensils, Clock, MapPin, ShieldCheck, Send, Loader2, AlertCircle } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { StatsService } from '../services/StatsService';
 
@@ -17,14 +17,47 @@ export const DonateForm: React.FC<DonateFormProps> = ({ user, onSuccess }) => {
   const [expiryHours, setExpiryHours] = useState(4);
   const [address, setAddress] = useState('');
   const [loading, setLoading] = useState(false);
+  const [safetyTips, setSafetyTips] = useState('');
+  const [isGeneratingTips, setIsGeneratingTips] = useState(false);
+  const [tipsError, setTipsError] = useState<string | null>(null);
 
-  const getSafetyTips = (type: string) => {
-    const lowerType = type.toLowerCase();
-    if (lowerType.includes('rice')) return 'Keep in a cool, dry place. Reheat thoroughly before consumption.';
-    if (lowerType.includes('roti') || lowerType.includes('bread')) return 'Store in an airtight container to prevent drying. Best consumed within 24 hours.';
-    if (lowerType.includes('curry') || lowerType.includes('dal')) return 'Refrigerate if not consuming immediately. Ensure it is heated to at least 75°C.';
-    return 'Ensure food is stored in clean containers and kept at safe temperatures.';
-  };
+  useEffect(() => {
+    const fetchSafetyTips = async () => {
+      if (foodType.length < 3) {
+        setSafetyTips('');
+        return;
+      }
+
+      setIsGeneratingTips(true);
+      setTipsError(null);
+      try {
+        const response = await fetch('/api/gemini', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt: `Provide 1-2 concise, practical food safety tips for donating ${foodType}. Focus on storage and reheating.`,
+            systemInstruction: "You are a food safety expert. Provide brief, actionable advice for community food sharing. Keep it under 150 characters."
+          })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to fetch safety tips');
+        }
+
+        const data = await response.json();
+        setSafetyTips(data.text);
+      } catch (error: any) {
+        console.error('Error fetching safety tips:', error);
+        setTipsError('Could not generate safety tips. Please follow standard food safety guidelines.');
+      } finally {
+        setIsGeneratingTips(false);
+      }
+    };
+
+    const debounceTimer = setTimeout(fetchSafetyTips, 1000);
+    return () => clearTimeout(debounceTimer);
+  }, [foodType]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,7 +80,7 @@ export const DonateForm: React.FC<DonateFormProps> = ({ user, onSuccess }) => {
         },
         expiryTime: Timestamp.fromDate(expiryDate),
         status: 'available',
-        safetyTips: getSafetyTips(foodType),
+        safetyTips: safetyTips || 'Ensure food is stored in clean containers and kept at safe temperatures.',
         createdAt: Timestamp.now(),
       };
 
@@ -148,9 +181,21 @@ export const DonateForm: React.FC<DonateFormProps> = ({ user, onSuccess }) => {
             className="p-4 bg-accent/10 rounded-xl border border-accent/20 flex gap-3"
           >
             <ShieldCheck className="text-secondary shrink-0" size={20} />
-            <div>
+            <div className="flex-grow">
               <p className="text-xs font-bold text-secondary uppercase tracking-wider mb-1">AI Safety Suggestion</p>
-              <p className="text-sm text-gray-700">{getSafetyTips(foodType)}</p>
+              {isGeneratingTips ? (
+                <div className="flex items-center gap-2 text-gray-500 text-sm">
+                  <Loader2 size={14} className="animate-spin" />
+                  Generating tips...
+                </div>
+              ) : tipsError ? (
+                <div className="flex items-center gap-2 text-red-500 text-sm">
+                  <AlertCircle size={14} />
+                  {tipsError}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-700">{safetyTips || 'Enter food type to see safety tips.'}</p>
+              )}
             </div>
           </motion.div>
         )}

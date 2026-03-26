@@ -69,18 +69,7 @@ async function testConnection() {
     await getDocFromServer(doc(db, 'stats', 'global'));
     console.log("Firestore connection successful.");
   } catch (error: any) {
-    if (error.message?.includes('the client is offline')) {
-      console.error("Firestore Error: The client is offline.");
-      console.error("Troubleshooting steps:");
-      console.error("1. Ensure the Firestore API is enabled in the Google Cloud Console for project:", firebaseConfig.projectId);
-      console.error("2. Ensure a Firestore database has been created (either '(default)' or a named one).");
-      console.error("3. If using a named database, ensure the 'firestoreDatabaseId' is provided in the configuration.");
-      console.error("4. Check if the API Key has the necessary permissions to access Firestore.");
-    } else if (error.message?.includes('Missing or insufficient permissions')) {
-      console.warn("Firestore Connection: Permissions restricted, but client is online.");
-    } else {
-      console.error("Firestore Connection Test Error:", error.message);
-    }
+    console.error("Firestore Connection Test Error:", error.message);
   }
 }
 testConnection();

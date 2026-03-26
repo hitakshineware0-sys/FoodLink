@@ -34,18 +34,16 @@ export class ErrorBoundary extends React.Component<Props, State> {
   public render() {
     const { children } = this.props;
     if (this.state.hasError) {
-      let errorMessage = 'An unexpected error occurred.';
+      let errorMessage = this.state.error?.message || 'An unexpected error occurred.';
       
       try {
-        // Check if it's a Firestore permission error (JSON string)
-        if (this.state.error?.message.startsWith('{')) {
-          const errorData = JSON.parse(this.state.error.message);
-          if (errorData.error.includes('Missing or insufficient permissions')) {
-            errorMessage = 'You do not have permission to access this data. Please ensure you are signed in with the correct account.';
-          }
+        // If it's a Firestore JSON error, try to extract the main error message
+        if (errorMessage.startsWith('{')) {
+          const errorData = JSON.parse(errorMessage);
+          errorMessage = errorData.error || errorMessage;
         }
       } catch (e) {
-        // Fallback to default message
+        // Fallback to original message
       }
 
       return (
@@ -55,7 +53,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
               <AlertCircle size={32} />
             </div>
             <h2 className="text-2xl font-black text-gray-900 mb-4">Something went wrong</h2>
-            <p className="text-gray-600 mb-8 leading-relaxed">
+            <p className="text-gray-600 mb-8 leading-relaxed break-words text-sm">
               {errorMessage}
             </p>
             <button

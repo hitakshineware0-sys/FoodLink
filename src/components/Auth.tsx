@@ -33,11 +33,8 @@ export const Auth: React.FC<AuthProps> = ({ onUserLoaded }) => {
           if (err.message?.includes('Missing or insufficient permissions')) {
             setTempUser(user);
             setShowRoleSelect(true);
-          } else if (err.message?.includes('client is offline')) {
-            setError('The app is unable to connect to Firestore. Please check your internet connection or Firebase configuration.');
-          } else {
-            setError('Failed to load user profile. Please try again.');
           }
+          // No UI error displayed on background auth check
         }
       } else {
         onUserLoaded(null);
@@ -55,17 +52,7 @@ export const Auth: React.FC<AuthProps> = ({ onUserLoaded }) => {
       await signInWithPopup(auth, googleProvider);
     } catch (err: any) {
       console.error('Sign in error:', err);
-      if (err.code === 'auth/popup-blocked') {
-        setError('Sign-in popup was blocked by your browser. Please allow popups for this site.');
-      } else if (err.code === 'auth/unauthorized-domain') {
-        setError('This domain is not authorized in the Firebase Console. Please add the current URL to the "Authorized domains" list in Firebase Auth settings.');
-      } else if (err.code === 'auth/cancelled-popup-request') {
-        setError('A sign-in request was already in progress. Please wait.');
-      } else if (err.code === 'auth/popup-closed-by-user') {
-        setError('Sign-in popup was closed. Please try again.');
-      } else {
-        setError('Failed to sign in. Please try again.');
-      }
+      setError(err.message || 'Authentication failed');
     } finally {
       setSigningIn(false);
     }

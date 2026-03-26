@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { db, auth, collection, addDoc, Timestamp, handleFirestoreError, OperationType } from '../firebase';
+import { db, collection, addDoc, Timestamp, handleFirestoreError, OperationType } from '../firebase';
 import { UserProfile } from '../types';
 import { motion } from 'motion/react';
 import { AlertTriangle, Send, X } from 'lucide-react';
@@ -27,12 +27,12 @@ export const ReportIssueForm: React.FC<ReportIssueFormProps> = ({ user, relatedI
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auth.currentUser) return;
+    if (!user) return;
     setLoading(true);
 
     try {
       const issueData = {
-        reporterId: auth.currentUser.uid,
+        reporterId: user.uid,
         reporterName: user.name,
         relatedId,
         relatedType,

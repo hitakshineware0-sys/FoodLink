@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { db, auth, collection, addDoc, Timestamp, handleFirestoreError, OperationType } from '../firebase';
+import { db, collection, addDoc, Timestamp, handleFirestoreError, OperationType } from '../firebase';
 import { UserProfile } from '../types';
 import { motion } from 'motion/react';
 import { Utensils, Clock, MapPin, ShieldCheck, Send } from 'lucide-react';
@@ -28,7 +28,7 @@ export const DonateForm: React.FC<DonateFormProps> = ({ user, onSuccess }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auth.currentUser) return;
+    if (!user) return;
     setLoading(true);
 
     try {
@@ -36,7 +36,7 @@ export const DonateForm: React.FC<DonateFormProps> = ({ user, onSuccess }) => {
       expiryDate.setHours(expiryDate.getHours() + expiryHours);
 
       const donationData = {
-        donorId: auth.currentUser.uid,
+        donorId: user.uid,
         donorName: user.name,
         foodType,
         quantity,

@@ -1,0 +1,117 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A user of the FoodLink platform.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The unique ID of the user." },
+        "name": { "type": "string", "description": "The full name of the user." },
+        "email": { "type": "string", "format": "email", "description": "The email address of the user." },
+        "role": { "type": "string", "enum": ["donor", "receiver", "volunteer", "ngo"], "description": "The role of the user." },
+        "rating": { "type": "number", "description": "The average rating of the user." },
+        "totalImpact": { "type": "number", "description": "The total number of meals saved by the user." },
+        "location": { "type": "object", "description": "The user's last known location." }
+      },
+      "required": ["uid", "name", "email", "role"]
+    },
+    "Donation": {
+      "title": "Donation",
+      "description": "A food donation listing.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The unique ID of the donation." },
+        "donorId": { "type": "string", "description": "The ID of the donor." },
+        "foodType": { "type": "string", "description": "The type of food (e.g., Rice, Roti, Curry)." },
+        "quantity": { "type": "string", "description": "The quantity of food." },
+        "location": { "type": "object", "description": "The location of the donation." },
+        "expiryTime": { "type": "string", "format": "date-time", "description": "The time when the food expires." },
+        "status": { "type": "string", "enum": ["available", "claimed", "picked_up", "delivered", "expired"], "description": "The status of the donation." },
+        "safetyTips": { "type": "string", "description": "AI-suggested safety tips." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "The time when the donation was created." }
+      },
+      "required": ["donorId", "foodType", "quantity", "expiryTime", "status"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "A pickup/delivery task for volunteers.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The unique ID of the task." },
+        "donationId": { "type": "string", "description": "The ID of the associated donation." },
+        "volunteerId": { "type": "string", "description": "The ID of the volunteer assigned to the task." },
+        "status": { "type": "string", "enum": ["pending", "in_progress", "completed"], "description": "The status of the task." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "The time when the task was created." }
+      },
+      "required": ["donationId", "status"]
+    },
+    "Issue": {
+      "title": "Issue",
+      "description": "A report of a problem with a donation, user, or task.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The unique ID of the issue." },
+        "reporterId": { "type": "string", "description": "The ID of the user reporting the issue." },
+        "reporterName": { "type": "string", "description": "The name of the user reporting the issue." },
+        "relatedId": { "type": "string", "description": "The ID of the related donation, user, or task." },
+        "relatedType": { "type": "string", "enum": ["donation", "user", "task"], "description": "The type of the related entity." },
+        "issueType": { "type": "string", "description": "The category of the issue." },
+        "description": { "type": "string", "description": "A detailed description of the issue." },
+        "status": { "type": "string", "enum": ["pending", "resolved", "dismissed"], "description": "The current status of the issue report." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "The time when the issue was reported." }
+      },
+      "required": ["reporterId", "relatedId", "relatedType", "issueType", "description", "status"]
+    },
+    "GlobalStats": {
+      "title": "GlobalStats",
+      "description": "Aggregated impact metrics for the platform.",
+      "type": "object",
+      "properties": {
+        "mealsSaved": { "type": "number", "description": "Total meals saved." },
+        "peopleFed": { "type": "number", "description": "Total people fed." },
+        "co2Reduced": { "type": "number", "description": "Total CO2 reduced in kg." },
+        "activeVolunteers": { "type": "number", "description": "Total active volunteers." },
+        "lastUpdated": { "type": "string", "format": "date-time", "description": "Last time the stats were updated." }
+      },
+      "required": ["mealsSaved", "peopleFed", "co2Reduced", "activeVolunteers"]
+    },
+    "DailyStats": {
+      "title": "DailyStats",
+      "description": "Daily impact metrics for charts.",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string", "format": "date", "description": "The date for these stats." },
+        "mealsSaved": { "type": "number", "description": "Meals saved on this day." },
+        "peopleFed": { "type": "number", "description": "People fed on this day." },
+        "co2Reduced": { "type": "number", "description": "CO2 reduced on this day." }
+      },
+      "required": ["date", "mealsSaved", "peopleFed", "co2Reduced"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles."
+    },
+    "/donations/{donationId}": {
+      "schema": "Donation",
+      "description": "Food donation listings."
+    },
+    "/tasks/{taskId}": {
+      "schema": "Task",
+      "description": "Volunteer tasks."
+    },
+    "/issues/{issueId}": {
+      "schema": "Issue",
+      "description": "Reported issues."
+    },
+    "/stats/global": {
+      "schema": "GlobalStats",
+      "description": "Global impact statistics."
+    },
+    "/dailyStats/{date}": {
+      "schema": "DailyStats",
+      "description": "Daily impact statistics."
+    }
+  }
+}

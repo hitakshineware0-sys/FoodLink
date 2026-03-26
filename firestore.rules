@@ -1,0 +1,182 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: userId (uid)
+    // Fields:
+    //   - uid: string (required, immutable)
+    //   - name: string (required, max 100 chars)
+    //   - email: string (required, email format)
+    //   - role: string (required, enum: donor, receiver, volunteer, ngo)
+    //   - rating: number (min 0, max 5)
+    //   - totalImpact: number (min 0)
+    //   - location: map (optional)
+    //
+    // Collection: donations
+    // Document ID: auto-generated
+    // Fields:
+    //   - donorId: string (required, immutable)
+    //   - donorName: string (max 100 chars)
+    //   - foodType: string (required, max 100 chars)
+    //   - quantity: string (required, max 50 chars)
+    //   - location: map (required)
+    //   - expiryTime: timestamp (required)
+    //   - status: string (required, enum: available, claimed, picked_up, delivered, expired)
+    //   - safetyTips: string (max 500 chars)
+    //   - createdAt: timestamp (immutable)
+    //
+    // Collection: tasks
+    // Document ID: auto-generated
+    // Fields:
+    //   - donationId: string (required, immutable)
+    //   - volunteerId: string (immutable)
+    //   - status: string (required, enum: pending, in_progress, completed)
+    //   - createdAt: timestamp (immutable)
+    //
+    // Collection: issues
+    // Document ID: auto-generated
+    // Fields:
+    //   - reporterId: string (required, immutable)
+    //   - reporterName: string (max 100 chars)
+    //   - relatedId: string (required, immutable)
+    //   - relatedType: string (required, enum: donation, user, task)
+    //   - issueType: string (required, max 100 chars)
+    //   - description: string (required, max 1000 chars)
+    //   - status: string (required, enum: pending, resolved, dismissed)
+    //   - createdAt: timestamp (immutable)
+    //
+    // Collection: stats
+    // Document ID: global
+    // Fields:
+    //   - mealsSaved: number (min 0)
+    //   - peopleFed: number (min 0)
+    //   - co2Reduced: number (min 0)
+    //   - activeVolunteers: number (min 0)
+    //   - lastUpdated: timestamp
+    //
+    // Collection: dailyStats
+    // Document ID: date (YYYY-MM-DD)
+    // Fields:
+    //   - date: string (required, YYYY-MM-DD)
+    //   - mealsSaved: number (min 0)
+    //   - peopleFed: number (min 0)
+    //   - co2Reduced: number (min 0)
+    //
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "hitakshineware0@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'name', 'email', 'role']) &&
+             data.uid is string && data.uid == request.auth.uid &&
+             data.name is string && data.name.size() <= 100 &&
+             data.email is string && isValidEmail(data.email) &&
+             data.role in ['donor', 'receiver', 'volunteer', 'ngo'] &&
+             (!('rating' in data) || (data.rating is number && data.rating >= 0 && data.rating <= 5)) &&
+             (!('totalImpact' in data) || (data.totalImpact is number && data.totalImpact >= 0));
+    }
+
+    function isValidDonation(data) {
+      return data.keys().hasAll(['donorId', 'foodType', 'quantity', 'expiryTime', 'status']) &&
+             data.donorId is string &&
+             data.foodType is string && data.foodType.size() <= 100 &&
+             data.quantity is string && data.quantity.size() <= 50 &&
+             data.expiryTime is timestamp &&
+             data.status in ['available', 'claimed', 'picked_up', 'delivered', 'expired'] &&
+             (!('safetyTips' in data) || (data.safetyTips is string && data.safetyTips.size() <= 500));
+    }
+
+    function isValidTask(data) {
+      return data.keys().hasAll(['donationId', 'status']) &&
+             data.donationId is string &&
+             data.status in ['pending', 'in_progress', 'completed'] &&
+             (!('volunteerId' in data) || data.volunteerId is string);
+    }
+
+    function isValidIssue(data) {
+      return data.keys().hasAll(['reporterId', 'relatedId', 'relatedType', 'issueType', 'description', 'status']) &&
+             data.reporterId is string && data.reporterId == request.auth.uid &&
+             data.relatedId is string &&
+             data.relatedType in ['donation', 'user', 'task'] &&
+             data.issueType is string && data.issueType.size() <= 100 &&
+             data.description is string && data.description.size() <= 1000 &&
+             data.status in ['pending', 'resolved', 'dismissed'];
+    }
+
+    function isValidGlobalStats(data) {
+      return data.mealsSaved is number && data.mealsSaved >= 0 &&
+             data.peopleFed is number && data.peopleFed >= 0 &&
+             data.co2Reduced is number && data.co2Reduced >= 0 &&
+             data.activeVolunteers is number && data.activeVolunteers >= 0;
+    }
+
+    function isValidDailyStats(data) {
+      return data.date is string &&
+             data.mealsSaved is number && data.mealsSaved >= 0 &&
+             data.peopleFed is number && data.peopleFed >= 0 &&
+             data.co2Reduced is number && data.co2Reduced >= 0;
+    }
+
+    // Rules
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && isValidUser(request.resource.data) && 
+                      request.resource.data.role == resource.data.role &&
+                      request.resource.data.uid == resource.data.uid;
+    }
+
+    match /donations/{donationId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidDonation(request.resource.data) && 
+                      request.resource.data.donorId == request.auth.uid;
+      allow update: if isAuthenticated() && isValidDonation(request.resource.data) &&
+                      request.resource.data.donorId == resource.data.donorId;
+      allow delete: if isAuthenticated() && resource.data.donorId == request.auth.uid;
+    }
+
+    match /tasks/{taskId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidTask(request.resource.data);
+      allow update: if isAuthenticated() && isValidTask(request.resource.data);
+    }
+
+    match /issues/{issueId} {
+      allow read: if isAuthenticated() && (resource.data.reporterId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && isValidIssue(request.resource.data);
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /stats/global {
+      allow read: if true; // Publicly readable impact
+      allow write: if isAuthenticated(); // For now, allow authenticated updates via StatsService
+    }
+
+    match /dailyStats/{date} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+  }
+}

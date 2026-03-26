@@ -1,0 +1,7 @@
+{
+  "name": "FoodLink – Smart Leftover Food Sharing App",
+  "description": "A platform connecting food donors, NGOs, and volunteers to reduce food waste and feed the needy with smart location matching and AI safety tips.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}

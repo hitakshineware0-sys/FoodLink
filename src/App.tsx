@@ -7,6 +7,7 @@ import { ImpactDashboard } from './components/ImpactDashboard';
 import { VolunteerTasks } from './components/VolunteerTasks';
 import { ReportIssueForm } from './components/ReportIssueForm';
 import { FullImpactReport } from './components/FullImpactReport';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Heart, 
@@ -202,8 +203,9 @@ export default function App() {
 
       {/* Main Content */}
       <main className="flex-grow">
-        <AnimatePresence mode="wait">
-          {currentPage === 'landing' && (
+        <ErrorBoundary>
+          <AnimatePresence mode="wait">
+            {currentPage === 'landing' && (
             <motion.div
               key="landing"
               initial={{ opacity: 0 }}
@@ -242,23 +244,20 @@ export default function App() {
                     </a>
                   </div>
                 </div>
-                <div className="relative">
+                <div className="relative lg:pl-10">
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-primary/5 rounded-full blur-3xl -z-10" />
                   <motion.div
-                    animate={{ y: [0, -20, 0] }}
-                    transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                    className="relative z-10 rounded-[3rem] overflow-hidden shadow-2xl border-8 border-white"
+                    animate={{ y: [0, -15, 0] }}
+                    transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+                    className="relative z-10 rounded-[3.5rem] overflow-hidden shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] border-[12px] border-white bg-white p-4"
                   >
                     <img 
-                      src="https://images.unsplash.com/photo-1488459711635-de86fc2c96fc?auto=format&fit=crop&q=80&w=1000" 
-                      alt="Fresh Food"
-                      className="w-full h-[500px] object-cover"
+                      src="https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&q=80&w=1000" 
+                      alt="Community Food Sharing"
+                      className="w-full h-[550px] object-cover rounded-[2.5rem]"
                       referrerPolicy="no-referrer"
                     />
                   </motion.div>
-                  <div className="absolute -bottom-10 -left-10 bg-secondary p-8 rounded-3xl shadow-xl z-20 text-white hidden md:block">
-                    <p className="text-4xl font-black">1.2M+</p>
-                    <p className="font-bold opacity-80 uppercase text-xs tracking-widest">Meals Saved</p>
-                  </div>
                 </div>
               </div>
 
@@ -465,6 +464,7 @@ export default function App() {
             </motion.div>
           )}
         </AnimatePresence>
+        </ErrorBoundary>
       </main>
 
       {/* Footer */}
